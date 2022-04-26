@@ -6,6 +6,10 @@
  .Description
   C'est outil utilise 2 entrées 1. L'export DNS 2. Une liste d'adresse IP. L'objectif est de matcher ces IP avec les noms de domaines
 
+ .LINK
+ https://github.com/0xF4D3
+ https://www.root-me.org/St0n14
+ https://ecole2600.com
  .Parameter IPExtract
   Le chemin de notre fichier contenant les adresses IP
 
