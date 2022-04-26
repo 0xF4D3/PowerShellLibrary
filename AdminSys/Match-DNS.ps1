@@ -14,6 +14,7 @@
 
  .Example
    match-DNS -DnsExtract .\DNSRecord.txt -IpExtract .\IpFile.csv
+
 #>
 Function Match-DNS{
 param(
@@ -22,17 +23,16 @@ param(
     [parameter (Mandatory=$true)]
     [string] $IpExtract
 )
+if(-not(Get-Item -Path $DnsExtract -ErrorAction Ignore)){Write-Host "File $DnsExtract Not Found`n`n" -ForegroundColor Red;return}
+if(-not(Get-Item -Path $IpExtract -ErrorAction Ignore)){Write-Host "File $IpExtract Not Found`n`n" -ForegroundColor Red;return}
 
-### Il faut que je check si les elements sont correct
 
-
-### Definition des variables pour la suite
+### isFile CSV
 $DnsTypeOfFileIsCSV = 0
 $IpTypeOfFileIsCSV = 0
 
-##Futur valeur de retour, une hashtable qui contiendra, DNS et IP
+##rturn Value
 $Matching = @{};
-
 
 ### Get extension
 $DnsTypeOfFile = $DnsExtract.LastIndexOf('.');
@@ -40,54 +40,61 @@ $DnsTypeOfFile = $DnsExtract.Substring($DnsTypeOfFile +1);
 $IpTypeOfFile = $IpExtract.LastIndexOf('.');
 $IpTypeOfFile = $IpExtract.Substring($IpTypeOfFile +1);
 
-Write-host "Test 1 : ip Extract = $IpTypeOfFile `nDNS Extract = $DnsTypeOfFile" -ForegroundColor Red;
-
-### Si l'extension de mes fichiers sont des csv
+#### CODE ####
 if($DnsTypeOfFile -eq "csv"){
-### il faut que je check quel est le delimiter
     $DnsTypeOfFileIsCSV = 1 ;
     $importDnsExtract = import-csv -Path $DnsExtract -Delimiter ",";
 }else{
     $importDnsExtract = get-content -path $DnsExtract;
 }
-Write-host "Test2 Mon fichier DNS Extract est lu `n" -ForegroundColor Red;
-write-host $importDnsExtract;
 
 if($IpTypeOfFile -eq "csv"){
-### il faut que je check quel est le delimiter
     $IpTypeOfFileIsCSV = 1
     $importIPextract = import-csv -Path $IpExtract -Delimiter ",";
 }else{
     $importIPextract = get-content -path $IpExtract;
 }
 
-Write-host "Test3 Mon fichier Ip Extract est lu `n" -ForegroundColor Red
-write-host $importIPextract
-
 if(($DnsTypeOfFileIsCSV -eq 1)-and ($IpTypeOfFileIsCSV -eq 1)){
-    ###double foreach . Les 2 Fichiers sont des csv
+    foreach($IP in $importIPextract){
+        foreach($DNS in $importDnsExtract){
+            if($DNS.'IP' -eq $IP.'IP'){
+                $Matching.Add($IP.'IP',$DNS.'DNS');
+            }
+        }
+
+    }
 }elseif($DnsTypeOfFileIsCSV -eq 1 -and $IpTypeOfFileIsCSV -eq 0){
-    ###Foreach + recherche ligne par ligne le fichiers dns est un csv
-}elseif(($DnsTypeOfFileIsCSV -eq 0) -and ($IpTypeOfFileIsCSV -eq 1)){
-    ### Recherche ligne + Foreach le Fichier dns est un txt mais le fichier ip est un csv
-    ###Extact Ip address from line
-    $my_FileDns = Get-Content $DnsExtract
     foreach($lineOfIpFile in $importIPextract){
-        write-host "test of ip" $lineOfIpFile;
-        foreach($lineOfDNSFile in $my_FileDns){
+        $lineOfIpFile = (Write-Output $lineOfIpFile | Select-String -Pattern "\d{1,3}(\.\d{1,3}){3}" -AllMatches).Matches.Value;
+        foreach($lineOfDNSFile in $importDnsExtract){
+            if($lineOfIpFile -eq $lineOfDNSFile.'IP'){
+                $Matching.Add($lineOfIpFile,$lineOfDNSFile.'DNS');
+            }
+        }
+    }
+}elseif(($DnsTypeOfFileIsCSV -eq 0) -and ($IpTypeOfFileIsCSV -eq 1)){
+    foreach($lineOfIpFile in $importIPextract){
+        foreach($lineOfDNSFile in $importDnsExtract){
             $iponthisline = (Write-Output $lineOfDNSFile | Select-String -Pattern "\d{1,3}(\.\d{1,3}){3}" -AllMatches).Matches.Value;
             $dnsonthisline = (Write-Output $lineOfDNSFile | Select-String -Pattern "^\D+?\S*\.\D+\." -AllMatches).Matches.Value;
-            if($lineOfIpFile.IP -eq $iponthisline){
+            if($lineOfIpFile.'IP' -eq $iponthisline){
                 $Matching.Add($iponthisline,$dnsonthisline)
-                write-host "My Ip File" $lineOfIpFile.IP "match with" $iponthisline "and with this dns record" $dnsonthisline
             }
 
         }
     }
-    $Matching
-
 }else{
-    ## Les Deux fichiers sont des TXT
-
+    foreach($lineOfIpFile in $importIPextract){
+        $lineOfIpFile = (Write-Output $lineOfIpFile | Select-String -Pattern "\d{1,3}(\.\d{1,3}){3}" -AllMatches).Matches.Value;
+        foreach($lineOfDNSFile in $importDnsExtract){
+            $iponthisline = (Write-Output $lineOfDNSFile | Select-String -Pattern "\d{1,3}(\.\d{1,3}){3}" -AllMatches).Matches.Value;
+            $dnsonthisline = (Write-Output $lineOfDNSFile | Select-String -Pattern "^\D+?\S*\.\D+\." -AllMatches).Matches.Value;
+            if($lineOfIpFile -eq $iponthisline){
+                $Matching.Add($iponthisline,$dnsonthisline)
+            }
+        }
+    }
 }
+return $Matching
 }
