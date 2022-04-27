@@ -30,6 +30,7 @@ Function Crack-Zip{
     )
     ## Get Path of 7z
     $PathOf7z = (Get-command 7z.exe).path
+    if($pathof7z -eq ""){Writ-host "Install 7z First" -ForegroundColor red;return}
     if($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent){Write-Verbose "Test if pathof7z exist: $PathOf7z"}
     if($pathof7z -eq ""){Write-Host "Path of 7z not found, donwload 7z`n`n" -ForegroundColor Red;return}
     ### Check if path exists
