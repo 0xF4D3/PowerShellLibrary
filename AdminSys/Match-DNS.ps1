@@ -17,9 +17,13 @@
 #>
 Function Match-DNS{
     param(
-        [parameter (Mandatory=$true)]
+        [parameter (Mandatory=$true,
+        HelpMessage = "Entrez le chemin du fichier contenant les extracts DNS")]
+        [ValidateNotNullOrEmpty()]
         [string] $DnsExtract,
-        [parameter (Mandatory=$true)]
+        [parameter (Mandatory=$true,
+        HelpMessage = "Entrez le chemin du fichier contenant les extracts IP")]
+        [ValidateNotNullOrEmpty()]
         [string] $IpExtract
     )
     if(-not(Get-Item -Path $DnsExtract -ErrorAction Ignore)){Write-Host "File $DnsExtract Not Found`n`n" -ForegroundColor Red;return}
